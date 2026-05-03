@@ -39,21 +39,28 @@ Offline Music Player được xây dựng cho phát nhạc cục bộ với giao
 Thêm ảnh chụp màn hình vào thư mục `screenshots/` và cập nhật đường dẫn hình ảnh bên dưới nếu cần.
 
 - Màn hình chính với danh sách bài hát
-  - `screenshots/home_screen.png`
+<img width="490" height="900" alt="image" src="https://github.com/user-attachments/assets/03585669-68fe-4661-bd80-6619f340c8a8" />
+<br>
 - Màn hình Now Playing
-  - `screenshots/now_playing_screen.png`
+<img width="487" height="900" alt="image" src="https://github.com/user-attachments/assets/b85dea99-1166-4800-87b5-7718628b9681" />
+<br>
 - Mini player
-  - `screenshots/mini_player.png`
+<img width="386" height="268" alt="image" src="https://github.com/user-attachments/assets/251b37c3-999c-4215-b22b-8701fa78d035" />
 - Màn hình Playlist
-  - `screenshots/playlist_screen.png`
+<img width="459" height="898" alt="image" src="https://github.com/user-attachments/assets/fc30ee26-0808-49bb-99b2-f919bb0ad279" />
+<br>
+<img width="466" height="889" alt="image" src="https://github.com/user-attachments/assets/0d9485f9-2bb1-4035-9ccd-0152dcfc10d1" />
+<br>
+<img width="498" height="892" alt="image" src="https://github.com/user-attachments/assets/a042a243-d6e7-43cc-af83-82c8f5ba2c17" />
+<br>
 - Màn hình Tìm kiếm
-  - `screenshots/search_screen.png`
+<img width="462" height="892" alt="image" src="https://github.com/user-attachments/assets/7605a0b1-2266-4547-8bbe-f0ba443df991" />
+<br>
 - Màn hình Cài đặt
-  - `screenshots/settings_screen.png`
+<img width="454" height="890" alt="image" src="https://github.com/user-attachments/assets/29b16f67-6cf9-44ad-a66f-1fb3a8e7c8f4" />
+<br>
 - Hộp thoại yêu cầu quyền
-  - `screenshots/permission_dialog.png`
-
-> Nếu ảnh chụp màn hình chưa có, hãy thêm các file PNG theo các đường dẫn trên để xem trước trong README.
+<img width="413" height="862" alt="image" src="https://github.com/user-attachments/assets/8189c767-4bd1-4394-9fcf-8baa0c3afd08" />
 
 ## Cách thêm file nhạc để thử nghiệm
 
