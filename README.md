@@ -1,17 +1,120 @@
-# offline_music_player
+# Offline Music Player
 
-A new Flutter project.
+Ứng dụng nghe nhạc Flutter được thiết kế để phát các file audio cục bộ và file mẫu, quản lý playlist, tìm kiếm bài hát, và hiển thị mini player gọn nhẹ.
 
-## Getting Started
+## Mô tả dự án và tính năng
 
-This project is a starting point for a Flutter application.
+Offline Music Player được xây dựng cho phát nhạc cục bộ với giao diện Material sạch và trực quan. Ứng dụng hỗ trợ:
 
-A few resources to get you started if this is your first Flutter project:
+- Màn hình chính với danh sách bài hát
+- Màn hình Now Playing với điều khiển phát đầy đủ
+- Mini player hiển thị khi điều hướng qua các màn hình khác
+- Tạo playlist và duyệt các playlist
+- Tìm kiếm bài hát theo tên, nghệ sĩ và album
+- Màn hình cài đặt cho tùy chọn ứng dụng và quyền truy cập
+- Hộp thoại yêu cầu quyền truy cập âm thanh trên Android
+- Tự động sử dụng file âm thanh mẫu khi không tìm thấy bài hát 
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Hướng dẫn cài đặt
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Cài đặt Flutter SDK và thiết lập môi trường phát triển:
+   - Flutter tương thích với Dart SDK `^3.11.4`
+   - Android SDK có sẵn trình giả lập hoặc thiết bị Android thật
+2. Sao chép kho lưu trữ:
+   ```bash
+   git clone <repository-url>
+   cd offline_music_player
+   ```
+3. Cài đặt phụ thuộc:
+   ```bash
+   flutter pub get
+   ```
+4. Chạy ứng dụng:
+   ```bash
+   flutter run
+   ```
+
+## Ảnh chụp màn hình của các giao diện
+
+Thêm ảnh chụp màn hình vào thư mục `screenshots/` và cập nhật đường dẫn hình ảnh bên dưới nếu cần.
+
+- Màn hình chính với danh sách bài hát
+  - `screenshots/home_screen.png`
+- Màn hình Now Playing
+  - `screenshots/now_playing_screen.png`
+- Mini player
+  - `screenshots/mini_player.png`
+- Màn hình Playlist
+  - `screenshots/playlist_screen.png`
+- Màn hình Tìm kiếm
+  - `screenshots/search_screen.png`
+- Màn hình Cài đặt
+  - `screenshots/settings_screen.png`
+- Hộp thoại yêu cầu quyền
+  - `screenshots/permission_dialog.png`
+
+> Nếu ảnh chụp màn hình chưa có, hãy thêm các file PNG theo các đường dẫn trên để xem trước trong README.
+
+## Cách thêm file nhạc để thử nghiệm
+
+1. Đặt file MP3 vào thư mục `assets/audio/sample_songs/`.
+2. Ứng dụng đã bao gồm ba file âm thanh mẫu mặc định:
+   - `assets/audio/sample_songs/song1.mp3`
+   - `assets/audio/sample_songs/song2.mp3`
+   - `assets/audio/sample_songs/song3.mp3`
+3. `pubspec.yaml` đã khai báo thư mục `assets/audio/sample_songs/` làm tài sản ứng dụng.
+4. Khởi động lại ứng dụng sau khi thêm hoặc thay đổi file.
+
+> Lưu ý: Ứng dụng sẽ cố gắng truy vấn audio ngoài trên Android. Nếu không tìm thấy bài hát ngoài hoặc quyền bị từ chối, ứng dụng sẽ tự động sử dụng các bài hát mẫu đi kèm.
+
+## Công nghệ sử dụng
+
+- Flutter
+- Dart
+- just_audio
+- audio_service
+- provider
+- shared_preferences
+- path_provider
+- permission_handler
+- on_audio_query
+- audio_session
+- rxdart
+- palette_generator
+
+## Ghi nhận âm nhạc
+
+Các file âm thanh mẫu được lưu trong `assets/audio/sample_songs/`. Chúng được cung cấp làm nội dung thử nghiệm để phát triển và demo.
+
+Xem `MUSIC_CREDITS.md` để biết chi tiết nguồn và hướng dẫn ghi nhận.
+
+## Hạn chế đã biết
+
+- Việc lưu playlist có thể bị hạn chế và không đảm bảo tồn tại sau mỗi lần khởi động lại.
+- Tìm kiếm chỉ là so khớp văn bản đơn giản, chưa hỗ trợ lọc nâng cao.
+- Ứng dụng phụ thuộc vào quyền truy cập audio ngoài trên Android; một số thiết bị có thể yêu cầu cấp quyền rõ ràng.
+- Metadata của file âm thanh mẫu được mã hóa cứng cho các tài sản đã đóng gói.
+- Chưa có tính năng tải ảnh bìa album tự động hoặc hỗ trợ thư viện nhạc trực tuyến.
+
+## Cải tiến trong tương lai
+
+- Thêm điều khiển phát trên màn hình khóa và thông báo.
+- Cải thiện bộ lọc tìm kiếm và khám phá nghệ sĩ/album.
+- Hỗ trợ ảnh bìa album tốt hơn và bộ nhớ đệm.
+- Thêm cải tiến dành cho iOS và hoàn thiện đa nền tảng.
+
+## Cấu trúc kho lưu trữ
+
+```
+offline_music_player/
+├── README.md
+├── MUSIC_CREDITS.md
+├── screenshots/
+├── lib/
+├── test/
+├── assets/
+│   ├── audio/
+│   │   └── sample_songs/
+│   └── images/
+└── pubspec.yaml
+```
