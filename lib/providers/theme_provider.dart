@@ -59,9 +59,9 @@ class ThemeProvider extends ChangeNotifier {
           inactiveTrackColor: Colors.grey,
         ),
         switchTheme: SwitchThemeData(
-          thumbColor: MaterialStateProperty.all(Colors.white),
-          trackColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) return _primaryColor;
+          thumbColor: WidgetStateProperty.all(Colors.white),
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return _primaryColor;
             return Colors.grey;
           }),
         ),
@@ -78,57 +78,58 @@ class ThemeProvider extends ChangeNotifier {
           backgroundColor: Color(0xFF282828),
           contentTextStyle: TextStyle(color: Colors.white),
         ),
+        iconTheme: IconThemeData(color: Colors.white70),
       );
     } else {
       return ThemeData(
         brightness: Brightness.light,
         primaryColor: _primaryColor,
-        scaffoldBackgroundColor: Colors.white,
+        scaffoldBackgroundColor: Color(0xFFF8F8F8),
         colorScheme: ColorScheme.light(
           primary: _primaryColor,
           secondary: _primaryColor,
           surface: Colors.white,
-          onSurface: Colors.black87,
+          onSurface: Color(0xFF1A1A1A),
           onPrimary: Colors.white,
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+          foregroundColor: Color(0xFF1A1A1A),
           elevation: 0,
-          iconTheme: IconThemeData(color: Colors.black),
+          iconTheme: IconThemeData(color: Color(0xFF1A1A1A)),
           titleTextStyle: TextStyle(
-            color: Colors.black,
+            color: Color(0xFF1A1A1A),
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        cardColor: Colors.grey[200],
+        cardColor: Color(0xFFEEEEEE),
         dialogBackgroundColor: Colors.white,
         textTheme: TextTheme(
-          bodyLarge: TextStyle(color: Colors.black87),
-          bodyMedium: TextStyle(color: Colors.black87),
-          titleLarge: TextStyle(color: Colors.black87),
-          titleMedium: TextStyle(color: Colors.black87),
+          bodyLarge: TextStyle(color: Color(0xFF1A1A1A)),
+          bodyMedium: TextStyle(color: Color(0xFF1A1A1A)),
+          titleLarge: TextStyle(color: Color(0xFF1A1A1A)),
+          titleMedium: TextStyle(color: Color(0xFF1A1A1A)),
         ),
         listTileTheme: ListTileThemeData(
-          textColor: Colors.black87,
-          iconColor: Colors.black54,
+          textColor: Color(0xFF1A1A1A),
+          iconColor: Color(0xFF666666),
         ),
         bottomNavigationBarTheme: BottomNavigationBarThemeData(
           backgroundColor: Colors.white,
           selectedItemColor: _primaryColor,
-          unselectedItemColor: Colors.grey,
+          unselectedItemColor: Color(0xFF999999),
         ),
         sliderTheme: SliderThemeData(
           activeTrackColor: _primaryColor,
           thumbColor: _primaryColor,
-          inactiveTrackColor: Colors.grey[300],
+          inactiveTrackColor: Color(0xFFD0D0D0),
         ),
         switchTheme: SwitchThemeData(
-          thumbColor: MaterialStateProperty.all(Colors.white),
-          trackColor: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) return _primaryColor;
-            return Colors.grey;
+          thumbColor: WidgetStateProperty.all(Colors.white),
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return _primaryColor;
+            return Color(0xFFD0D0D0);
           }),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -140,8 +141,36 @@ class ThemeProvider extends ChangeNotifier {
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(foregroundColor: _primaryColor),
         ),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: Color(0xFF333333),
+          contentTextStyle: TextStyle(color: Colors.white),
+        ),
+        iconTheme: IconThemeData(color: Color(0xFF666666)),
       );
     }
+  }
+
+  Color textColor(BuildContext context) {
+    return Theme.of(context).colorScheme.onSurface;
+  }
+
+  Color subtitleColor(BuildContext context) {
+    return Theme.of(context).colorScheme.onSurface.withOpacity(0.55);
+  }
+
+  Color hintColor(BuildContext context) {
+    return Theme.of(context).colorScheme.onSurface.withOpacity(0.35);
+  }
+
+  Color cardBgColor(BuildContext context) {
+    return Theme.of(context).cardColor;
+  }
+
+  Color searchFieldBgColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.05);
   }
 
   Future<void> _loadTheme() async {

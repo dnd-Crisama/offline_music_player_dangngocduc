@@ -8,6 +8,10 @@ class StorageService {
   static const String _shuffleKey = 'shuffle_enabled';
   static const String _repeatKey = 'repeat_mode';
   static const String _volumeKey = 'volume';
+  static const String _favoritesKey = 'favorite_song_ids';
+  static const String _recentlyPlayedKey = 'recently_played';
+  static const String _playbackPositionKey = 'playback_position';
+  static const String _playbackSongIdKey = 'playback_song_id';
 
   Future<void> savePlaylists(List<PlaylistModel> playlists) async {
     final prefs = await SharedPreferences.getInstance();
@@ -65,5 +69,57 @@ class StorageService {
   Future<double> getVolume() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble(_volumeKey) ?? 1.0;
+  }
+
+  Future<void> saveFavorites(Set<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_favoritesKey, json.encode(ids.toList()));
+  }
+
+  Future<Set<String>> getFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    final str = prefs.getString(_favoritesKey);
+    if (str != null) {
+      final List<dynamic> list = json.decode(str);
+      return list.map((e) => e.toString()).toSet();
+    }
+    return {};
+  }
+
+  Future<void> saveRecentlyPlayedIds(List<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_recentlyPlayedKey, json.encode(ids));
+  }
+
+  Future<List<String>> getRecentlyPlayedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final str = prefs.getString(_recentlyPlayedKey);
+    if (str != null) {
+      final List<dynamic> list = json.decode(str);
+      return list.map((e) => e.toString()).toList();
+    }
+    return [];
+  }
+
+  Future<void> savePlaybackPosition(String songId, int positionMs) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_playbackSongIdKey, songId);
+    await prefs.setInt(_playbackPositionKey, positionMs);
+  }
+
+  Future<MapEntry<String, int>?> getPlaybackPosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    final songId = prefs.getString(_playbackSongIdKey);
+    final pos = prefs.getInt(_playbackPositionKey);
+    if (songId != null && pos != null) {
+      return MapEntry(songId, pos);
+    }
+    return null;
+  }
+
+  Future<void> clearPlaybackPosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_playbackSongIdKey);
+    await prefs.remove(_playbackPositionKey);
   }
 }

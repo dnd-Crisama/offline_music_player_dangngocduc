@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/song_model.dart';
 import '../providers/audio_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/playlist_service.dart';
 import '../services/permission_service.dart';
 import '../widgets/song_tile.dart';
@@ -59,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _filteredSongs = songs;
         });
         _applySort();
+        context.read<AudioProvider>().restoreLastSession(songs);
       }
     } catch (e) {
       if (mounted) {
@@ -106,6 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tp = context.watch<ThemeProvider>();
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
@@ -119,6 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildContent() {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final tp = context.read<ThemeProvider>();
+
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
@@ -167,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? 'No results'
                       : '${_filteredSongs.length} songs',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: onSurface.withOpacity(0.5),
                     fontSize: 13,
                   ),
                 ),
@@ -194,17 +204,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             vertical: 7,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1DB954),
+                            color: Theme.of(context).colorScheme.primary,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
+                          child: Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.shuffle,
                                 color: Colors.white,
                                 size: 14,
                               ),
-                              SizedBox(width: 4),
+                              const SizedBox(width: 4),
                               Text(
                                 'Shuffle',
                                 style: TextStyle(
@@ -220,12 +230,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 8),
                     PopupMenuButton<SortOption>(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.sort,
-                        color: Colors.white54,
+                        color: onSurface.withOpacity(0.54),
                         size: 20,
                       ),
-                      color: const Color(0xFF282828),
+                      color: Theme.of(context).cardColor,
                       onSelected: (opt) {
                         setState(() => _currentSort = opt);
                         _applySort();
@@ -263,6 +273,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   PopupMenuItem<SortOption> _sortItem(SortOption opt, String label) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final primary = Theme.of(context).colorScheme.primary;
     return PopupMenuItem<SortOption>(
       value: opt,
       child: Row(
@@ -271,17 +283,20 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentSort == opt
                 ? Icons.radio_button_checked
                 : Icons.radio_button_off,
-            color: const Color(0xFF1DB954),
+            color: primary,
             size: 18,
           ),
           const SizedBox(width: 10),
-          Text(label, style: const TextStyle(color: Colors.white)),
+          Text(label, style: TextStyle(color: onSurface)),
         ],
       ),
     );
   }
 
   Widget _buildHeader() {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Row(
@@ -293,15 +308,15 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 _getGreeting(),
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.65),
+                  color: onSurface.withOpacity(0.65),
                   fontSize: 14,
                 ),
               ),
               const SizedBox(height: 2),
-              const Text(
+              Text(
                 'My Music',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: onSurface,
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
                 ),
@@ -311,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: Icon(
               _showSearch ? Icons.search_off : Icons.search,
-              color: Colors.white,
+              color: onSurface,
             ),
             onPressed: () => setState(() {
               _showSearch = !_showSearch;
@@ -327,6 +342,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchBar() {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final tp = context.read<ThemeProvider>();
+
     return AnimatedSize(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
@@ -336,20 +354,20 @@ class _HomeScreenState extends State<HomeScreen> {
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: onSurface),
                 decoration: InputDecoration(
                   hintText: 'Search songs, artists, albums...',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  prefixIcon: const Icon(
+                  hintStyle: TextStyle(color: onSurface.withOpacity(0.35)),
+                  prefixIcon: Icon(
                     Icons.search,
-                    color: Colors.white38,
+                    color: onSurface.withOpacity(0.38),
                     size: 20,
                   ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.clear,
-                            color: Colors.white38,
+                            color: onSurface.withOpacity(0.38),
                             size: 18,
                           ),
                           onPressed: () {
@@ -359,7 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         )
                       : null,
                   filled: true,
-                  fillColor: Colors.white.withOpacity(0.08),
+                  fillColor: tp.searchFieldBgColor(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -378,6 +396,9 @@ class _HomeScreenState extends State<HomeScreen> {
     required List<SongModel> songs,
     required AudioProvider provider,
   }) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final cardBg = Theme.of(context).cardColor;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -385,8 +406,8 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
           child: Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: onSurface,
               fontSize: 17,
               fontWeight: FontWeight.bold,
             ),
@@ -418,11 +439,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 110,
                         height: 90,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF282828),
+                          color: cardBg,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.black.withOpacity(0.15),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
@@ -436,8 +457,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 6),
                       Text(
                         song.title,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: onSurface,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
                         ),
@@ -446,8 +467,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Text(
                         song.artist,
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: onSurface.withOpacity(0.54),
                           fontSize: 11,
                         ),
                         maxLines: 1,
@@ -465,27 +486,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPermissionDenied() {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.music_off, size: 72, color: Colors.white24),
+            Icon(Icons.music_off, size: 72, color: onSurface.withOpacity(0.24)),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Storage Access Required',
               style: TextStyle(
-                color: Colors.white,
+                color: onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Please grant storage permission to access your music library.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54, fontSize: 14),
+              style: TextStyle(
+                color: onSurface.withOpacity(0.54),
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 28),
             ElevatedButton.icon(
@@ -493,7 +520,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.settings_outlined),
               label: const Text('Open Settings'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1DB954),
+                backgroundColor: primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
@@ -511,27 +538,37 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildNoSongs() {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
             const SizedBox(height: 48),
-            const Icon(Icons.music_note, size: 72, color: Colors.white24),
+            Icon(
+              Icons.music_note,
+              size: 72,
+              color: onSurface.withOpacity(0.24),
+            ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'No Music Found',
               style: TextStyle(
-                color: Colors.white,
+                color: onSurface,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 10),
-            const Text(
+            Text(
               'Add MP3 files to your device or place them in\nassets/audio/sample_songs/',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54, fontSize: 14),
+              style: TextStyle(
+                color: onSurface.withOpacity(0.54),
+                fontSize: 14,
+              ),
             ),
             const SizedBox(height: 28),
             OutlinedButton.icon(
@@ -539,8 +576,8 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF1DB954),
-                side: const BorderSide(color: Color(0xFF1DB954)),
+                foregroundColor: primary,
+                side: BorderSide(color: primary),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
@@ -560,16 +597,24 @@ class _RecentlyPlayedArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (song.albumArt == null) {
-      return const Center(
-        child: Icon(Icons.music_note, color: Colors.white24, size: 36),
+    if (song.albumArt != null && !kIsWeb) {
+      return Image.file(
+        File(song.albumArt!),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Center(
+          child: Icon(
+            Icons.music_note,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24),
+            size: 36,
+          ),
+        ),
       );
     }
-    return Image.asset(
-      'assets/images/default_album_art.png',
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const Center(
-        child: Icon(Icons.music_note, color: Colors.white24, size: 36),
+    return Center(
+      child: Icon(
+        Icons.music_note,
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24),
+        size: 36,
       ),
     );
   }

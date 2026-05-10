@@ -5,6 +5,7 @@ import '../models/song_model.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/audio_provider.dart';
 import '../services/playlist_service.dart';
+import '../widgets/song_tile.dart';
 
 class PlaylistScreen extends StatefulWidget {
   @override
@@ -60,6 +61,9 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
     PlaylistModel playlist,
     PlaylistProvider provider,
   ) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Card(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
@@ -67,13 +71,10 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            Icons.playlist_play,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          child: Icon(Icons.playlist_play, color: primary),
         ),
         title: Text(
           playlist.name,
@@ -81,9 +82,7 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
         ),
         subtitle: Text(
           '${playlist.songIds.length} songs',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          ),
+          style: TextStyle(color: onSurface.withOpacity(0.6)),
         ),
         trailing: IconButton(
           icon: Icon(Icons.delete_outline, color: Colors.redAccent),
@@ -95,6 +94,8 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
   }
 
   void _showCreatePlaylistDialog(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final primary = Theme.of(context).colorScheme.primary;
     final TextEditingController controller = TextEditingController();
     showDialog(
       context: context,

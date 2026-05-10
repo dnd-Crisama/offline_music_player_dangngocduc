@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:on_audio_query/on_audio_query.dart' as on_audio_query;
 import '../models/song_model.dart';
 import '../providers/audio_provider.dart';
 import '../services/playlist_service.dart';
@@ -39,11 +38,8 @@ class _AllSongsScreenState extends State<AllSongsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF191414),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF191414),
-        title: Text('All Songs'),
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(title: Text('All Songs')),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : ListView.builder(

@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/audio_provider.dart';
+import '../services/playlist_service.dart';
+import '../services/storage_service.dart';
 
 class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -20,10 +24,7 @@ class SettingsScreen extends StatelessWidget {
               themeProvider.isDarkMode
                   ? 'Dark theme active'
                   : 'Light theme active',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                fontSize: 12,
-              ),
+              style: TextStyle(color: onSurface.withOpacity(0.5), fontSize: 12),
             ),
             secondary: Icon(
               themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
@@ -41,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: themeProvider.primaryColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white30, width: 2),
+                border: Border.all(color: onSurface.withOpacity(0.3), width: 2),
               ),
             ),
             onTap: () => _showColorPicker(context, themeProvider),
@@ -67,9 +68,7 @@ class SettingsScreen extends StatelessWidget {
                         Text(
                           '${(audioProvider.currentVolume * 100).round()}%',
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withOpacity(0.5),
+                            color: onSurface.withOpacity(0.5),
                             fontSize: 13,
                           ),
                         ),
@@ -106,13 +105,13 @@ class SettingsScreen extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1DB954).withOpacity(0.15),
+                            color: primary.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            '${audioProvider.playbackSpeed}×',
-                            style: const TextStyle(
-                              color: Color(0xFF1DB954),
+                            '${audioProvider.playbackSpeed}x',
+                            style: TextStyle(
+                              color: primary,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
@@ -129,11 +128,11 @@ class SettingsScreen extends StatelessWidget {
                         final selected =
                             (audioProvider.playbackSpeed - speed).abs() < 0.01;
                         return ChoiceChip(
-                          label: Text('${speed}×'),
+                          label: Text('${speed}x'),
                           selected: selected,
                           onSelected: (_) =>
                               audioProvider.setPlaybackSpeed(speed),
-                          selectedColor: const Color(0xFF1DB954),
+                          selectedColor: primary,
                           labelStyle: TextStyle(
                             color: selected ? Colors.white : null,
                             fontWeight: selected ? FontWeight.w600 : null,
@@ -150,25 +149,89 @@ class SettingsScreen extends StatelessWidget {
 
           const Divider(height: 1, indent: 16, endIndent: 16),
 
+          _SectionHeader(title: 'LIBRARY'),
+
+          FutureBuilder<int>(
+            future: _getTotalSongCount(),
+            builder: (context, snap) {
+              final count = snap.data ?? 0;
+              return ListTile(
+                leading: const Icon(Icons.library_music_outlined),
+                title: const Text('Total Songs'),
+                trailing: Text(
+                  count.toString(),
+                  style: TextStyle(color: onSurface.withOpacity(0.5)),
+                ),
+              );
+            },
+          ),
+
+          Consumer<AudioProvider>(
+            builder: (context, audioProvider, _) {
+              return ListTile(
+                leading: const Icon(Icons.favorite_outline),
+                title: const Text('Favourites'),
+                trailing: Text(
+                  '${audioProvider.favoriteSongIds.length}',
+                  style: TextStyle(color: onSurface.withOpacity(0.5)),
+                ),
+              );
+            },
+          ),
+
+          Consumer<AudioProvider>(
+            builder: (context, audioProvider, _) {
+              return ListTile(
+                leading: const Icon(Icons.history),
+                title: const Text('Recently Played'),
+                trailing: Text(
+                  '${audioProvider.recentlyPlayed.length}',
+                  style: TextStyle(color: onSurface.withOpacity(0.5)),
+                ),
+              );
+            },
+          ),
+
+          Consumer<AudioProvider>(
+            builder: (context, audioProvider, _) {
+              final current = audioProvider.currentSong;
+              if (current == null) return const SizedBox.shrink();
+              return ListTile(
+                leading: const Icon(Icons.play_circle_outline),
+                title: const Text('Last Played'),
+                subtitle: Text(
+                  '${current.title} - ${current.artist}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: onSurface.withOpacity(0.5),
+                    fontSize: 12,
+                  ),
+                ),
+              );
+            },
+          ),
+
+          const Divider(height: 1, indent: 16, endIndent: 16),
+
           _SectionHeader(title: 'ABOUT'),
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: const Text('Version'),
             trailing: Text(
               '1.0.0',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-              ),
+              style: TextStyle(color: onSurface.withOpacity(0.5)),
             ),
           ),
           ListTile(
             leading: const Icon(Icons.music_note_outlined),
             title: const Text('Audio Engine'),
             trailing: Text(
-              'just_audio',
+              'just_audio + audio_service',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                color: onSurface.withOpacity(0.5),
                 fontFamily: 'monospace',
+                fontSize: 12,
               ),
             ),
           ),
@@ -179,7 +242,14 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  Future<int> _getTotalSongCount() async {
+    final service = PlaylistService();
+    final songs = await service.getAllSongs();
+    return songs.length;
+  }
+
   void _showColorPicker(BuildContext context, ThemeProvider themeProvider) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     final colours = [
       const Color(0xFF1DB954),
       Colors.blue,
@@ -213,7 +283,7 @@ class SettingsScreen extends StatelessWidget {
                   color: color,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: selected ? Colors.white : Colors.transparent,
+                    color: selected ? onSurface : Colors.transparent,
                     width: 3,
                   ),
                   boxShadow: selected

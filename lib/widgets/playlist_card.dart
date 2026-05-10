@@ -14,26 +14,29 @@ class PlaylistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return ListTile(
       leading: Container(
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: Color(0xFF282828),
+          color: primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Icon(Icons.playlist_play, color: Colors.white),
+        child: Icon(Icons.playlist_play, color: primary),
       ),
       title: Text(
         playlist.name,
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+        style: TextStyle(color: onSurface, fontWeight: FontWeight.w500),
       ),
       subtitle: Text(
         '${playlist.songIds.length} songs',
-        style: TextStyle(color: Colors.grey),
+        style: TextStyle(color: onSurface.withOpacity(0.55)),
       ),
       trailing: IconButton(
-        icon: Icon(Icons.delete, color: Colors.grey),
+        icon: Icon(Icons.delete, color: onSurface.withOpacity(0.55)),
         onPressed: onDelete,
       ),
       onTap: onTap,

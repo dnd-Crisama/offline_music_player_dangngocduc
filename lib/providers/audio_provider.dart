@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/song_model.dart';
-import '../models/playback_state_model.dart';
+import '../models/playback_state_model.dart' as app;
 import '../services/audio_player_service.dart';
 import '../services/storage_service.dart';
 
 class AudioProvider extends ChangeNotifier {
-  final AudioPlayerService _audioService;
+  final AudioPlayerHandler _handler;
   final StorageService _storageService;
   final Random _random = Random();
 
@@ -20,14 +21,11 @@ class AudioProvider extends ChangeNotifier {
   Duration? _sleepTimerRemaining;
 
   double _currentVolume = 1.0;
-
   double _playbackSpeed = 1.0;
-
   final List<SongModel> _recentlyPlayed = [];
+  Set<String> _favoriteSongIds = {};
 
-  final Set<String> _favoriteSongIds = {};
-
-  AudioProvider(this._audioService, this._storageService) {
+  AudioProvider(this._handler, this._storageService) {
     _init();
   }
 
@@ -44,31 +42,70 @@ class AudioProvider extends ChangeNotifier {
   Set<String> get favoriteSongIds => Set.unmodifiable(_favoriteSongIds);
   bool isFavorite(String songId) => _favoriteSongIds.contains(songId);
 
-  Stream<Duration> get positionStream => _audioService.positionStream;
-  Stream<Duration?> get durationStream => _audioService.durationStream;
-  Stream<bool> get playingStream => _audioService.playingStream;
-  Stream<PlaybackState> get playbackStateStream =>
-      _audioService.playbackStateStream;
+  Stream<Duration> get positionStream => _handler.positionStream;
+  Stream<Duration?> get durationStream => _handler.durationStream;
+  Stream<bool> get playingStream => _handler.playingStream;
+  Stream<app.PlaybackState> get playbackStateStream =>
+      _handler.appPlaybackStateStream;
 
   Future<void> _init() async {
     _isShuffleEnabled = await _storageService.getShuffleState();
     final repeatMode = await _storageService.getRepeatMode();
     _loopMode = LoopMode.values[repeatMode];
-    await _audioService.setLoopMode(_loopMode);
+    await _handler.setLoopMode(_loopMode);
 
     _currentVolume = await _storageService.getVolume();
-    await _audioService.setVolume(_currentVolume);
+    await _handler.setVolume(_currentVolume);
 
-    _audioService.playerStateStream.listen((state) {
+    _favoriteSongIds = await _storageService.getFavorites();
+
+    final recentIds = await _storageService.getRecentlyPlayedIds();
+    _recentlyPlayed.clear();
+
+    _handler.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         next();
       }
     });
 
+    _savePlaybackPositionPeriodically();
+
     notifyListeners();
   }
 
-  // ── Playlist ───────────────────────────────────────────────────────────────
+  void _savePlaybackPositionPeriodically() {
+    Timer.periodic(const Duration(seconds: 5), (_) async {
+      final song = currentSong;
+      if (song != null && _handler.isPlaying) {
+        await _storageService.savePlaybackPosition(
+          song.id,
+          _handler.currentPosition.inMilliseconds,
+        );
+      }
+    });
+  }
+
+  Future<void> restoreLastSession(List<SongModel> allSongs) async {
+    final lastPlayedId = await _storageService.getLastPlayed();
+    final pos = await _storageService.getPlaybackPosition();
+
+    if (lastPlayedId != null) {
+      final recentIds = await _storageService.getRecentlyPlayedIds();
+      for (final id in recentIds) {
+        final song = allSongs.where((s) => s.id == id).firstOrNull;
+        if (song != null) {
+          _recentlyPlayed.add(song);
+        }
+      }
+      if (_recentlyPlayed.length > 20) {
+        _recentlyPlayed.removeRange(20, _recentlyPlayed.length);
+      }
+      notifyListeners();
+    }
+
+    await _storageService.clearPlaybackPosition();
+  }
+
   Future<void> setPlaylist(List<SongModel> songs, int startIndex) async {
     _playlist = songs;
     _currentIndex = startIndex;
@@ -82,27 +119,44 @@ class AudioProvider extends ChangeNotifier {
     _currentIndex = index;
     final song = _playlist[index];
 
+    _handler.updateMediaItem(
+      MediaItem(
+        id: song.id,
+        title: song.title,
+        artist: song.artist,
+        album: song.album,
+        artUri: song.albumArt != null ? Uri.tryParse(song.albumArt!) : null,
+      ),
+    );
+
     if (song.isAsset) {
-      await _audioService.loadAssetAudio(song.filePath);
+      await _handler.loadAssetAudio(song.filePath);
     } else {
-      await _audioService.loadAudio(song.filePath);
+      await _handler.loadAudio(song.filePath);
     }
 
-    await _audioService.play();
+    await _handler.play();
     await _storageService.saveLastPlayed(song.id);
 
     _recentlyPlayed.removeWhere((s) => s.id == song.id);
     _recentlyPlayed.insert(0, song);
     if (_recentlyPlayed.length > 20) _recentlyPlayed.removeLast();
 
+    _saveRecentlyPlayed();
+
     notifyListeners();
   }
 
+  Future<void> _saveRecentlyPlayed() async {
+    final ids = _recentlyPlayed.map((s) => s.id).toList();
+    await _storageService.saveRecentlyPlayedIds(ids);
+  }
+
   Future<void> playPause() async {
-    if (_audioService.isPlaying) {
-      await _audioService.pause();
+    if (_handler.isPlaying) {
+      await _handler.pause();
     } else {
-      await _audioService.play();
+      await _handler.play();
     }
     notifyListeners();
   }
@@ -121,8 +175,8 @@ class AudioProvider extends ChangeNotifier {
 
   Future<void> previous() async {
     if (_playlist.isEmpty) return;
-    if (_audioService.currentPosition.inSeconds > 3) {
-      await _audioService.seek(Duration.zero);
+    if (_handler.currentPosition.inSeconds > 3) {
+      await _handler.seek(Duration.zero);
     } else {
       _currentIndex = _isShuffleEnabled
           ? _getRandomIndex()
@@ -131,10 +185,10 @@ class AudioProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> seek(Duration position) async => _audioService.seek(position);
+  Future<void> seek(Duration position) async => _handler.seek(position);
 
   Future<void> pause() async {
-    await _audioService.pause();
+    await _handler.pause();
     notifyListeners();
   }
 
@@ -156,21 +210,21 @@ class AudioProvider extends ChangeNotifier {
         _loopMode = LoopMode.off;
         break;
     }
-    await _audioService.setLoopMode(_loopMode);
+    await _handler.setLoopMode(_loopMode);
     await _storageService.saveRepeatMode(_loopMode.index);
     notifyListeners();
   }
 
   Future<void> setVolume(double volume) async {
     _currentVolume = volume.clamp(0.0, 1.0);
-    await _audioService.setVolume(_currentVolume);
+    await _handler.setVolume(_currentVolume);
     await _storageService.saveVolume(_currentVolume);
     notifyListeners();
   }
 
   Future<void> setPlaybackSpeed(double speed) async {
     _playbackSpeed = speed;
-    await _audioService.setSpeed(speed);
+    await _handler.setSpeed(speed);
     notifyListeners();
   }
 
@@ -180,6 +234,7 @@ class AudioProvider extends ChangeNotifier {
     } else {
       _favoriteSongIds.add(songId);
     }
+    _storageService.saveFavorites(_favoriteSongIds);
     notifyListeners();
   }
 
@@ -223,7 +278,7 @@ class AudioProvider extends ChangeNotifier {
   @override
   void dispose() {
     _sleepTimer?.cancel();
-    _audioService.dispose();
+    _handler.dispose();
     super.dispose();
   }
 }

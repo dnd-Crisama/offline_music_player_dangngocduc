@@ -4,12 +4,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
 import 'package:palette_generator/palette_generator.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/song_model.dart';
 import '../models/playback_state_model.dart';
 import '../providers/audio_provider.dart';
+import '../providers/playlist_provider.dart';
 import '../widgets/progress_bar.dart';
 import '../widgets/album_art.dart';
 import '../widgets/equalizer_animation.dart';
+import '../widgets/marquee_text.dart';
 
 class NowPlayingScreen extends StatefulWidget {
   @override
@@ -77,50 +80,79 @@ class _NowPlayingScreenState extends State<NowPlayingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Consumer<AudioProvider>(
       builder: (context, provider, _) {
         final song = provider.currentSong;
-        if (song != null) _extractColors(song);
+        if (isDark && song != null) _extractColors(song);
+
+        final bgColor = isDark ? Colors.transparent : null;
+        final gradient = isDark
+            ? BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.45, 1.0],
+                  colors: [_topColor, _bottomColor, const Color(0xFF0A0A0A)],
+                ),
+              )
+            : null;
 
         return Scaffold(
-          backgroundColor: Colors.transparent,
-          body: AnimatedContainer(
-            duration: const Duration(milliseconds: 900),
-            curve: Curves.easeInOut,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: const [0.0, 0.45, 1.0],
-                colors: [_topColor, _bottomColor, const Color(0xFF0A0A0A)],
-              ),
-            ),
-            child: song == null
-                ? const Center(
-                    child: Text(
-                      'No song playing',
-                      style: TextStyle(color: Colors.white54),
-                    ),
-                  )
-                : FadeTransition(
-                    opacity: _enterFade,
-                    child: SlideTransition(
-                      position: _enterSlide,
-                      child: _Body(
-                        song: song,
-                        provider: provider,
-                        topColor: _topColor,
-                      ),
+          backgroundColor: bgColor,
+          body: isDark
+              ? AnimatedContainer(
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeInOut,
+                  decoration: gradient!,
+                  child: song == null
+                      ? Center(
+                          child: Text(
+                            'No song playing',
+                            style: TextStyle(color: Colors.white54),
+                          ),
+                        )
+                      : FadeTransition(
+                          opacity: _enterFade,
+                          child: SlideTransition(
+                            position: _enterSlide,
+                            child: _Body(
+                              song: song,
+                              provider: provider,
+                              topColor: _topColor,
+                            ),
+                          ),
+                        ),
+                )
+              : song == null
+              ? Center(
+                  child: Text(
+                    'No song playing',
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.5),
                     ),
                   ),
-          ),
+                )
+              : FadeTransition(
+                  opacity: _enterFade,
+                  child: SlideTransition(
+                    position: _enterSlide,
+                    child: _Body(
+                      song: song,
+                      provider: provider,
+                      topColor: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
         );
       },
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 class _Body extends StatelessWidget {
   final SongModel song;
   final AudioProvider provider;
@@ -134,6 +166,14 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark
+        ? Colors.white
+        : Theme.of(context).colorScheme.onSurface;
+    final subColor = isDark
+        ? Colors.white.withOpacity(0.65)
+        : Theme.of(context).colorScheme.onSurface.withOpacity(0.65);
+
     return SafeArea(
       child: Column(
         children: [
@@ -166,7 +206,6 @@ class _Body extends StatelessWidget {
   }
 }
 
-// ── App bar ────────────────────────────────────────────────────────────────
 class _AppBar extends StatelessWidget {
   final SongModel song;
   final AudioProvider provider;
@@ -175,25 +214,29 @@ class _AppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark
+        ? Colors.white
+        : Theme.of(context).colorScheme.onSurface;
+    final subColor = isDark
+        ? Colors.white54
+        : Theme.of(context).colorScheme.onSurface.withOpacity(0.54);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(
-              Icons.keyboard_arrow_down,
-              color: Colors.white,
-              size: 32,
-            ),
+            icon: Icon(Icons.keyboard_arrow_down, color: textColor, size: 32),
             onPressed: () => Navigator.pop(context),
           ),
           Expanded(
             child: Column(
               children: [
-                const Text(
+                Text(
                   'NOW PLAYING',
                   style: TextStyle(
-                    color: Colors.white54,
+                    color: subColor,
                     fontSize: 11,
                     letterSpacing: 2,
                     fontWeight: FontWeight.w700,
@@ -202,8 +245,8 @@ class _AppBar extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   song.album ?? 'Unknown Album',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: textColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -214,7 +257,7 @@ class _AppBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
+            icon: Icon(Icons.more_vert, color: textColor),
             onPressed: () => _showOptionsSheet(context, provider),
           ),
         ],
@@ -223,18 +266,25 @@ class _AppBar extends StatelessWidget {
   }
 
   void _showOptionsSheet(BuildContext context, AudioProvider provider) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF282828),
+      backgroundColor: isDark ? const Color(0xFF282828) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => Wrap(
         children: [
           ListTile(
-            leading: const Icon(Icons.share, color: Colors.white70),
-            title: const Text('Share', style: TextStyle(color: Colors.white)),
-            onTap: () => Navigator.pop(context),
+            leading: Icon(Icons.share, color: onSurface.withOpacity(0.7)),
+            title: Text('Share', style: TextStyle(color: onSurface)),
+            onTap: () {
+              Navigator.pop(context);
+              _shareSong(context);
+            },
           ),
           ListTile(
             leading: Icon(
@@ -242,14 +292,14 @@ class _AppBar extends StatelessWidget {
                   ? Icons.favorite
                   : Icons.favorite_border,
               color: provider.isFavorite(song.id)
-                  ? const Color(0xFF1DB954)
-                  : Colors.white70,
+                  ? primary
+                  : onSurface.withOpacity(0.7),
             ),
             title: Text(
               provider.isFavorite(song.id)
                   ? 'Remove from Favourites'
                   : 'Add to Favourites',
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: onSurface),
             ),
             onTap: () {
               provider.toggleFavorite(song.id);
@@ -260,9 +310,13 @@ class _AppBar extends StatelessWidget {
       ),
     );
   }
+
+  void _shareSong(BuildContext context) {
+    final text = 'Listening to ${song.title} by ${song.artist}';
+    Share.share(text);
+  }
 }
 
-// ── Album art with scale animation ────────────────────────────────────────
 class _AlbumArtCard extends StatelessWidget {
   final AudioProvider provider;
   final Color accentColor;
@@ -312,7 +366,6 @@ class _AlbumArtCard extends StatelessWidget {
   }
 }
 
-// ── Song info + heart ─────────────────────────────────────────────────────
 class _SongInfoRow extends StatelessWidget {
   final SongModel song;
   final AudioProvider provider;
@@ -321,6 +374,15 @@ class _SongInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark
+        ? Colors.white
+        : Theme.of(context).colorScheme.onSurface;
+    final subColor = isDark
+        ? Colors.white.withOpacity(0.65)
+        : Theme.of(context).colorScheme.onSurface.withOpacity(0.65);
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -328,24 +390,20 @@ class _SongInfoRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                song.title,
-                style: const TextStyle(
-                  color: Colors.white,
+              MarqueeText(
+                text: song.title,
+                style: TextStyle(
+                  color: textColor,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   height: 1.2,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                availableWidth: MediaQuery.of(context).size.width - 96,
               ),
               const SizedBox(height: 4),
               Text(
                 song.artist,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.65),
-                  fontSize: 15,
-                ),
+                style: TextStyle(color: subColor, fontSize: 15),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -363,8 +421,8 @@ class _SongInfoRow extends StatelessWidget {
                   : Icons.favorite_border,
               key: ValueKey(provider.isFavorite(song.id)),
               color: provider.isFavorite(song.id)
-                  ? const Color(0xFF1DB954)
-                  : Colors.white60,
+                  ? primary
+                  : (isDark ? Colors.white60 : Colors.black45),
               size: 28,
             ),
           ),
@@ -374,7 +432,6 @@ class _SongInfoRow extends StatelessWidget {
   }
 }
 
-// ── Progress bar ──────────────────────────────────────────────────────────
 class _ProgressSection extends StatelessWidget {
   final AudioProvider provider;
 
@@ -396,7 +453,6 @@ class _ProgressSection extends StatelessWidget {
   }
 }
 
-// ── Main controls (prev / play / next + shuffle / repeat) ────────────────
 class _MainControls extends StatelessWidget {
   final AudioProvider provider;
 
@@ -404,23 +460,26 @@ class _MainControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark
+        ? Colors.white
+        : Theme.of(context).colorScheme.onSurface;
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Column(
       children: [
-        // shuffle ─── ─── ─── play / pause ─── ─── ─── repeat
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _IconToggle(
               icon: Icons.shuffle,
               active: provider.isShuffleEnabled,
+              activeColor: primary,
+              inactiveColor: isDark ? Colors.white60 : Colors.black45,
               onTap: provider.toggleShuffle,
             ),
             IconButton(
-              icon: const Icon(
-                Icons.skip_previous,
-                color: Colors.white,
-                size: 36,
-              ),
+              icon: Icon(Icons.skip_previous, color: textColor, size: 36),
               onPressed: provider.previous,
             ),
             StreamBuilder<bool>(
@@ -435,10 +494,12 @@ class _MainControls extends StatelessWidget {
                     height: 68,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white,
+                      color: isDark ? Colors.white : primary,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.white.withOpacity(0.25),
+                          color: (isDark ? Colors.white : primary).withOpacity(
+                            0.25,
+                          ),
                           blurRadius: 20,
                           spreadRadius: 2,
                         ),
@@ -446,7 +507,7 @@ class _MainControls extends StatelessWidget {
                     ),
                     child: Icon(
                       playing ? Icons.pause : Icons.play_arrow,
-                      color: Colors.black,
+                      color: isDark ? Colors.black : Colors.white,
                       size: 38,
                     ),
                   ),
@@ -454,7 +515,7 @@ class _MainControls extends StatelessWidget {
               },
             ),
             IconButton(
-              icon: const Icon(Icons.skip_next, color: Colors.white, size: 36),
+              icon: Icon(Icons.skip_next, color: textColor, size: 36),
               onPressed: provider.next,
             ),
             _RepeatButton(provider: provider),
@@ -468,11 +529,15 @@ class _MainControls extends StatelessWidget {
 class _IconToggle extends StatelessWidget {
   final IconData icon;
   final bool active;
+  final Color activeColor;
+  final Color inactiveColor;
   final VoidCallback onTap;
 
   const _IconToggle({
     required this.icon,
     required this.active,
+    required this.activeColor,
+    required this.inactiveColor,
     required this.onTap,
   });
 
@@ -484,7 +549,7 @@ class _IconToggle extends StatelessWidget {
         IconButton(
           icon: Icon(
             icon,
-            color: active ? const Color(0xFF1DB954) : Colors.white60,
+            color: active ? activeColor : inactiveColor,
             size: 24,
           ),
           onPressed: onTap,
@@ -495,9 +560,9 @@ class _IconToggle extends StatelessWidget {
             child: Container(
               width: 4,
               height: 4,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFF1DB954),
+                color: activeColor,
               ),
             ),
           ),
@@ -513,14 +578,18 @@ class _RepeatButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
     final isOn = provider.loopMode != LoopMode.off;
+    final inactiveColor = isDark ? Colors.white60 : Colors.black45;
+
     return Stack(
       alignment: Alignment.bottomCenter,
       children: [
         IconButton(
           icon: Icon(
             provider.loopMode == LoopMode.one ? Icons.repeat_one : Icons.repeat,
-            color: isOn ? const Color(0xFF1DB954) : Colors.white60,
+            color: isOn ? primary : inactiveColor,
             size: 24,
           ),
           onPressed: provider.toggleRepeat,
@@ -531,10 +600,7 @@ class _RepeatButton extends StatelessWidget {
             child: Container(
               width: 4,
               height: 4,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF1DB954),
-              ),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: primary),
             ),
           ),
       ],
@@ -542,7 +608,6 @@ class _RepeatButton extends StatelessWidget {
   }
 }
 
-// ── Volume slider ─────────────────────────────────────────────────────────
 class _VolumeRow extends StatelessWidget {
   final AudioProvider provider;
 
@@ -550,11 +615,21 @@ class _VolumeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final iconColor = isDark ? Colors.white54 : Colors.black45;
+    final activeTrack = isDark
+        ? Colors.white
+        : Theme.of(context).colorScheme.primary;
+    final inactiveTrack = isDark ? Colors.white24 : Colors.black12;
+    final thumbColor = isDark
+        ? Colors.white
+        : Theme.of(context).colorScheme.primary;
+
     return Row(
       children: [
         Icon(
           provider.currentVolume == 0 ? Icons.volume_off : Icons.volume_down,
-          color: Colors.white54,
+          color: iconColor,
           size: 18,
         ),
         Expanded(
@@ -563,10 +638,10 @@ class _VolumeRow extends StatelessWidget {
               trackHeight: 2,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-              activeTrackColor: Colors.white,
-              inactiveTrackColor: Colors.white24,
-              thumbColor: Colors.white,
-              overlayColor: Colors.white24,
+              activeTrackColor: activeTrack,
+              inactiveTrackColor: inactiveTrack,
+              thumbColor: thumbColor,
+              overlayColor: inactiveTrack,
             ),
             child: Slider(
               value: provider.currentVolume,
@@ -576,13 +651,12 @@ class _VolumeRow extends StatelessWidget {
             ),
           ),
         ),
-        const Icon(Icons.volume_up, color: Colors.white54, size: 18),
+        Icon(Icons.volume_up, color: iconColor, size: 18),
       ],
     );
   }
 }
 
-// ── Bottom icon row: timer | speed | lyrics | equalizer ──────────────────
 class _BottomIconRow extends StatelessWidget {
   final AudioProvider provider;
 
@@ -590,33 +664,44 @@ class _BottomIconRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final inactiveColor = isDark ? Colors.white60 : Colors.black45;
+    final inactiveLabel = isDark ? Colors.white54 : Colors.black38;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        // Sleep timer
         _BottomIcon(
           icon: Icons.bedtime_outlined,
           label: provider.sleepTimerRemaining != null
               ? '${provider.sleepTimerRemaining!.inMinutes}m'
               : null,
           active: provider.sleepTimerRemaining != null,
+          activeColor: primary,
+          inactiveColor: inactiveColor,
+          inactiveLabelColor: inactiveLabel,
           onTap: () => _showSleepTimerDialog(context, provider),
         ),
-        // Speed
         _BottomIcon(
           icon: Icons.speed,
           label: provider.playbackSpeed != 1.0
               ? '${provider.playbackSpeed}x'
               : null,
           active: provider.playbackSpeed != 1.0,
+          activeColor: primary,
+          inactiveColor: inactiveColor,
+          inactiveLabelColor: inactiveLabel,
           onTap: () => _showSpeedDialog(context, provider),
         ),
-        // Lyrics
         _BottomIcon(
           icon: Icons.lyrics_outlined,
+          active: false,
+          activeColor: primary,
+          inactiveColor: inactiveColor,
+          inactiveLabelColor: inactiveLabel,
           onTap: () => _showLyricsDialog(context),
         ),
-        // Equalizer animation acting as a visual only button
         StreamBuilder<bool>(
           stream: provider.playingStream,
           builder: (_, snap) {
@@ -625,7 +710,7 @@ class _BottomIconRow extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: EqualizerAnimation(
                 isPlaying: isPlaying,
-                color: const Color(0xFF1DB954),
+                color: primary,
                 width: 22,
                 height: 18,
                 barCount: 4,
@@ -638,13 +723,18 @@ class _BottomIconRow extends StatelessWidget {
   }
 
   void _showSleepTimerDialog(BuildContext context, AudioProvider provider) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final cardBg = Theme.of(context).cardColor;
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF282828),
-        title: const Text(
+        backgroundColor: isDark ? const Color(0xFF282828) : Colors.white,
+        title: Text(
           'Sleep Timer',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: onSurface, fontWeight: FontWeight.bold),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -659,24 +749,18 @@ class _BottomIconRow extends StatelessWidget {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1DB954).withOpacity(0.15),
+                    color: primary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF1DB954).withOpacity(0.4),
-                    ),
+                    border: Border.all(color: primary.withOpacity(0.4)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.timer,
-                        color: Color(0xFF1DB954),
-                        size: 18,
-                      ),
+                      Icon(Icons.timer, color: primary, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         'Stops in ${provider.sleepTimerRemaining!.inMinutes}m '
                         '${provider.sleepTimerRemaining!.inSeconds.remainder(60)}s',
-                        style: const TextStyle(color: Color(0xFF1DB954)),
+                        style: TextStyle(color: primary),
                       ),
                     ],
                   ),
@@ -688,8 +772,8 @@ class _BottomIconRow extends StatelessWidget {
               children: [15, 30, 45, 60].map((min) {
                 return OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white30),
+                    foregroundColor: onSurface,
+                    side: BorderSide(color: onSurface.withOpacity(0.3)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -718,10 +802,7 @@ class _BottomIconRow extends StatelessWidget {
             ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Close',
-              style: TextStyle(color: Color(0xFF1DB954)),
-            ),
+            child: Text('Close', style: TextStyle(color: primary)),
           ),
         ],
       ),
@@ -729,14 +810,18 @@ class _BottomIconRow extends StatelessWidget {
   }
 
   void _showSpeedDialog(BuildContext context, AudioProvider provider) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     final speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF282828),
-        title: const Text(
+        backgroundColor: isDark ? const Color(0xFF282828) : Colors.white,
+        title: Text(
           'Playback Speed',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: onSurface, fontWeight: FontWeight.bold),
         ),
         content: Wrap(
           spacing: 10,
@@ -755,18 +840,16 @@ class _BottomIconRow extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? const Color(0xFF1DB954)
-                      : Colors.white.withOpacity(0.08),
+                  color: selected ? primary : onSurface.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: selected ? const Color(0xFF1DB954) : Colors.white24,
+                    color: selected ? primary : onSurface.withOpacity(0.24),
                   ),
                 ),
                 child: Text(
                   '${s}x',
                   style: TextStyle(
-                    color: selected ? Colors.black : Colors.white,
+                    color: selected ? Colors.white : onSurface,
                     fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -777,10 +860,7 @@ class _BottomIconRow extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Done',
-              style: TextStyle(color: Color(0xFF1DB954)),
-            ),
+            child: Text('Done', style: TextStyle(color: primary)),
           ),
         ],
       ),
@@ -788,10 +868,13 @@ class _BottomIconRow extends StatelessWidget {
   }
 
   void _showLyricsDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF282828),
+      backgroundColor: isDark ? const Color(0xFF282828) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -810,16 +893,16 @@ class _BottomIconRow extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: onSurface.withOpacity(0.24),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Lyrics',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: onSurface,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
@@ -828,27 +911,29 @@ class _BottomIconRow extends StatelessWidget {
               Expanded(
                 child: ListView(
                   controller: ctrl,
-                  children: const [
+                  children: [
                     Center(
                       child: Column(
                         children: [
                           Icon(
                             Icons.lyrics_outlined,
-                            color: Colors.white24,
+                            color: onSurface.withOpacity(0.24),
                             size: 56,
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
                             'No lyrics available',
                             style: TextStyle(
-                              color: Colors.white54,
+                              color: onSurface.withOpacity(0.54),
                               fontSize: 16,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             'Lyrics will appear here when available.',
-                            style: TextStyle(color: Colors.white38),
+                            style: TextStyle(
+                              color: onSurface.withOpacity(0.38),
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -869,13 +954,19 @@ class _BottomIcon extends StatelessWidget {
   final IconData icon;
   final String? label;
   final bool active;
+  final Color activeColor;
+  final Color inactiveColor;
+  final Color inactiveLabelColor;
   final VoidCallback onTap;
 
   const _BottomIcon({
     required this.icon,
     required this.onTap,
+    required this.active,
+    required this.activeColor,
+    required this.inactiveColor,
+    required this.inactiveLabelColor,
     this.label,
-    this.active = false,
   });
 
   @override
@@ -887,17 +978,13 @@ class _BottomIcon extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: active ? const Color(0xFF1DB954) : Colors.white60,
-              size: 22,
-            ),
+            Icon(icon, color: active ? activeColor : inactiveColor, size: 22),
             if (label != null) ...[
               const SizedBox(height: 2),
               Text(
                 label!,
                 style: TextStyle(
-                  color: active ? const Color(0xFF1DB954) : Colors.white54,
+                  color: active ? activeColor : inactiveLabelColor,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),

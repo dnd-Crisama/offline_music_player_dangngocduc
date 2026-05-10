@@ -9,6 +9,11 @@ import '../widgets/equalizer_animation.dart';
 class MiniPlayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final cardBg = Theme.of(context).cardColor;
+
     return Consumer<AudioProvider>(
       builder: (context, provider, _) {
         final song = provider.currentSong;
@@ -48,11 +53,11 @@ class MiniPlayer extends StatelessWidget {
               height: 70,
               margin: const EdgeInsets.fromLTRB(8, 0, 8, 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF282828),
+                color: isDark ? const Color(0xFF282828) : Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.45),
+                    color: Colors.black.withOpacity(isDark ? 0.45 : 0.15),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -69,10 +74,10 @@ class MiniPlayer extends StatelessWidget {
                         return LinearProgressIndicator(
                           value: progress,
                           minHeight: 2,
-                          backgroundColor: Colors.white12,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF1DB954),
-                          ),
+                          backgroundColor: isDark
+                              ? Colors.white12
+                              : Colors.black12,
+                          valueColor: AlwaysStoppedAnimation<Color>(primary),
                         );
                       },
                     ),
@@ -102,7 +107,7 @@ class MiniPlayer extends StatelessWidget {
                                         ),
                                         child: EqualizerAnimation(
                                           isPlaying: playing,
-                                          color: const Color(0xFF1DB954),
+                                          color: primary,
                                           width: 16,
                                           height: 14,
                                           barCount: 3,
@@ -119,8 +124,8 @@ class MiniPlayer extends StatelessWidget {
                                       children: [
                                         Text(
                                           song.title,
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color: onSurface,
                                             fontWeight: FontWeight.w600,
                                             fontSize: 13,
                                           ),
@@ -130,9 +135,7 @@ class MiniPlayer extends StatelessWidget {
                                         Text(
                                           song.artist,
                                           style: TextStyle(
-                                            color: Colors.white.withOpacity(
-                                              0.55,
-                                            ),
+                                            color: onSurface.withOpacity(0.55),
                                             fontSize: 11,
                                           ),
                                           maxLines: 1,
@@ -145,11 +148,11 @@ class MiniPlayer extends StatelessWidget {
                               ),
                             ),
                             if (provider.isFavorite(song.id))
-                              const Padding(
-                                padding: EdgeInsets.only(right: 2),
+                              Padding(
+                                padding: const EdgeInsets.only(right: 2),
                                 child: Icon(
                                   Icons.favorite,
-                                  color: Color(0xFF1DB954),
+                                  color: primary,
                                   size: 14,
                                 ),
                               ),
@@ -160,7 +163,7 @@ class MiniPlayer extends StatelessWidget {
                                 return IconButton(
                                   icon: Icon(
                                     playing ? Icons.pause : Icons.play_arrow,
-                                    color: Colors.white,
+                                    color: onSurface,
                                     size: 28,
                                   ),
                                   onPressed: provider.playPause,
@@ -169,9 +172,9 @@ class MiniPlayer extends StatelessWidget {
                               },
                             ),
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.skip_next,
-                                color: Colors.white,
+                                color: onSurface,
                                 size: 24,
                               ),
                               onPressed: provider.next,

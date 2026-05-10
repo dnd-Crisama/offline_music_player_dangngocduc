@@ -10,25 +10,30 @@ class AlbumArt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = Theme.of(context).cardColor;
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(size * 0.08),
-        color: Color(0xFF282828),
+        color: cardBg,
       ),
-      child: _buildImage(),
+      child: _buildImage(context),
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(BuildContext context) {
+    final iconColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.4);
+
     if (albumArt == null) {
       return Image.asset(
         'assets/images/default_album_art.png',
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           return Center(
-            child: Icon(Icons.music_note, color: Colors.grey, size: size * 0.5),
+            child: Icon(Icons.music_note, color: iconColor, size: size * 0.5),
           );
         },
       );
@@ -46,7 +51,7 @@ class AlbumArt extends StatelessWidget {
               return Center(
                 child: Icon(
                   Icons.music_note,
-                  color: Colors.grey,
+                  color: iconColor,
                   size: size * 0.5,
                 ),
               );
@@ -69,7 +74,7 @@ class AlbumArt extends StatelessWidget {
               return Center(
                 child: Icon(
                   Icons.music_note,
-                  color: Colors.grey,
+                  color: iconColor,
                   size: size * 0.5,
                 ),
               );

@@ -14,6 +14,10 @@ class ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Column(
       children: [
         SliderTheme(
@@ -21,10 +25,10 @@ class ProgressBar extends StatelessWidget {
             trackHeight: 3,
             thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
             overlayShape: RoundSliderOverlayShape(overlayRadius: 16),
-            activeTrackColor: Color(0xFF1DB954),
-            inactiveTrackColor: Colors.grey[800],
-            thumbColor: Colors.white,
-            overlayColor: Color(0xFF1DB954).withOpacity(0.3),
+            activeTrackColor: primary,
+            inactiveTrackColor: isDark ? Colors.grey[800] : Colors.grey[300],
+            thumbColor: isDark ? Colors.white : primary,
+            overlayColor: primary.withOpacity(0.3),
           ),
           child: Slider(
             value: position.inMilliseconds.toDouble(),
@@ -44,11 +48,17 @@ class ProgressBar extends StatelessWidget {
             children: [
               Text(
                 DurationFormatter.format(position),
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(
+                  color: onSurface.withOpacity(0.55),
+                  fontSize: 12,
+                ),
               ),
               Text(
                 DurationFormatter.format(duration),
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(
+                  color: onSurface.withOpacity(0.55),
+                  fontSize: 12,
+                ),
               ),
             ],
           ),

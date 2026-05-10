@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/song_model.dart';
 import '../providers/audio_provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/playlist_service.dart';
 import '../widgets/song_tile.dart';
 
@@ -117,6 +118,9 @@ class _SearchScreenState extends State<SearchScreen>
   }
 
   Widget _buildSearchBar(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final tp = context.read<ThemeProvider>();
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
@@ -124,25 +128,28 @@ class _SearchScreenState extends State<SearchScreen>
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.09),
+                color: tp.searchFieldBgColor(context),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(
                 controller: _ctrl,
                 focusNode: _focus,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(color: onSurface, fontSize: 16),
                 decoration: InputDecoration(
-                  hintText: 'Songs, artists, albums…',
+                  hintText: 'Songs, artists, albums...',
                   hintStyle: TextStyle(
-                    color: Colors.white.withOpacity(0.35),
+                    color: onSurface.withOpacity(0.35),
                     fontSize: 15,
                   ),
-                  prefixIcon: const Icon(Icons.search, color: Colors.white38),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: onSurface.withOpacity(0.38),
+                  ),
                   suffixIcon: _ctrl.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.clear,
-                            color: Colors.white38,
+                            color: onSurface.withOpacity(0.38),
                             size: 18,
                           ),
                           onPressed: () {
@@ -168,6 +175,10 @@ class _SearchScreenState extends State<SearchScreen>
 
   Widget _buildTabBar(BuildContext context) {
     const tabs = ['All', 'Songs', 'Artists', 'Albums'];
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final tp = context.read<ThemeProvider>();
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: SingleChildScrollView(
@@ -185,15 +196,13 @@ class _SearchScreenState extends State<SearchScreen>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? const Color(0xFF1DB954)
-                      : Colors.white.withOpacity(0.08),
+                  color: selected ? primary : tp.searchFieldBgColor(context),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   tabs[i],
                   style: TextStyle(
-                    color: selected ? Colors.black : Colors.white70,
+                    color: selected ? Colors.white : onSurface.withOpacity(0.7),
                     fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                     fontSize: 13,
                   ),
@@ -227,16 +236,17 @@ class _SearchScreenState extends State<SearchScreen>
 
   Widget _buildBrowseHint() {
     if (!_initialised) return const SizedBox.shrink();
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search, size: 64, color: Colors.white.withOpacity(0.12)),
+          Icon(Icons.search, size: 64, color: onSurface.withOpacity(0.12)),
           const SizedBox(height: 16),
           Text(
             'Search your library',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
+              color: onSurface.withOpacity(0.4),
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -244,10 +254,7 @@ class _SearchScreenState extends State<SearchScreen>
           const SizedBox(height: 8),
           Text(
             '${_allSongs.length} songs available',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.25),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: onSurface.withOpacity(0.25), fontSize: 13),
           ),
         ],
       ),
@@ -255,6 +262,7 @@ class _SearchScreenState extends State<SearchScreen>
   }
 
   Widget _buildNoResults() {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -262,23 +270,17 @@ class _SearchScreenState extends State<SearchScreen>
           Icon(
             Icons.sentiment_dissatisfied_outlined,
             size: 56,
-            color: Colors.white.withOpacity(0.15),
+            color: onSurface.withOpacity(0.15),
           ),
           const SizedBox(height: 16),
           Text(
             'No results for "${_ctrl.text}"',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.4),
-              fontSize: 16,
-            ),
+            style: TextStyle(color: onSurface.withOpacity(0.4), fontSize: 16),
           ),
           const SizedBox(height: 6),
           Text(
             'Try a different search term.',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.25),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: onSurface.withOpacity(0.25), fontSize: 13),
           ),
         ],
       ),

@@ -9,6 +9,11 @@ class PlayerControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final inactiveColor = isDark ? Colors.grey : Colors.black45;
+
     return Column(
       children: [
         Row(
@@ -17,14 +22,12 @@ class PlayerControls extends StatelessWidget {
             IconButton(
               icon: Icon(
                 Icons.shuffle,
-                color: provider.isShuffleEnabled
-                    ? Color(0xFF1DB954)
-                    : Colors.grey,
+                color: provider.isShuffleEnabled ? primary : inactiveColor,
               ),
               onPressed: () => provider.toggleShuffle(),
             ),
             SizedBox(width: 40),
-            _buildRepeatButton(),
+            _buildRepeatButton(primary, inactiveColor),
           ],
         ),
         SizedBox(height: 20),
@@ -32,7 +35,7 @@ class PlayerControls extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
-              icon: Icon(Icons.skip_previous, color: Colors.white, size: 40),
+              icon: Icon(Icons.skip_previous, color: onSurface, size: 40),
               onPressed: () => provider.previous(),
             ),
             StreamBuilder<bool>(
@@ -44,7 +47,7 @@ class PlayerControls extends StatelessWidget {
                   height: 70,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xFF1DB954),
+                    color: primary,
                   ),
                   child: IconButton(
                     icon: Icon(
@@ -58,7 +61,7 @@ class PlayerControls extends StatelessWidget {
               },
             ),
             IconButton(
-              icon: Icon(Icons.skip_next, color: Colors.white, size: 40),
+              icon: Icon(Icons.skip_next, color: onSurface, size: 40),
               onPressed: () => provider.next(),
             ),
           ],
@@ -67,22 +70,22 @@ class PlayerControls extends StatelessWidget {
     );
   }
 
-  Widget _buildRepeatButton() {
+  Widget _buildRepeatButton(Color primary, Color inactiveColor) {
     IconData iconData;
     Color color;
 
     switch (provider.loopMode) {
       case LoopMode.off:
         iconData = Icons.repeat;
-        color = Colors.grey;
+        color = inactiveColor;
         break;
       case LoopMode.all:
         iconData = Icons.repeat;
-        color = Color(0xFF1DB954);
+        color = primary;
         break;
       case LoopMode.one:
         iconData = Icons.repeat_one;
-        color = Color(0xFF1DB954);
+        color = primary;
         break;
     }
 
