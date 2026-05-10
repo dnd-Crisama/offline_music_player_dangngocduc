@@ -7,99 +7,254 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
-    final audioProvider = context.read<AudioProvider>();
-    final isDark = themeProvider.isDarkMode;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Settings')),
+      appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          _SectionHeader(title: 'APPEARANCE'),
+
           SwitchListTile(
-            title: Text('Dark Mode'),
+            title: const Text('Dark Mode'),
+            subtitle: Text(
+              themeProvider.isDarkMode
+                  ? 'Dark theme active'
+                  : 'Light theme active',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                fontSize: 12,
+              ),
+            ),
+            secondary: Icon(
+              themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+            ),
             value: themeProvider.isDarkMode,
-            onChanged: (value) {
-              themeProvider.toggleTheme();
-            },
+            onChanged: (_) => themeProvider.toggleTheme(),
           ),
+
           ListTile(
-            title: Text('Accent Color'),
+            leading: const Icon(Icons.palette_outlined),
+            title: const Text('Accent Colour'),
             trailing: Container(
-              width: 24,
-              height: 24,
+              width: 26,
+              height: 26,
               decoration: BoxDecoration(
                 color: themeProvider.primaryColor,
                 shape: BoxShape.circle,
+                border: Border.all(color: Colors.white30, width: 2),
               ),
             ),
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: Text('Pick a color'),
-                    content: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children:
-                          [
-                            Colors.blue,
-                            Colors.red,
-                            Colors.green,
-                            Colors.purple,
-                            Colors.orange,
-                            Color(0xFF1DB954),
-                          ].map((color) {
-                            return GestureDetector(
-                              onTap: () {
-                                themeProvider.setPrimaryColor(color);
-                                Navigator.pop(context);
-                              },
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: color,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.grey),
-                                ),
-                              ),
-                            );
-                          }).toList(),
+            onTap: () => _showColorPicker(context, themeProvider),
+          ),
+
+          const Divider(height: 1, indent: 16, endIndent: 16),
+
+          _SectionHeader(title: 'PLAYBACK'),
+
+          Consumer<AudioProvider>(
+            builder: (context, audioProvider, _) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.volume_up_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        const Text('Volume'),
+                        const Spacer(),
+                        Text(
+                          '${(audioProvider.currentVolume * 100).round()}%',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.5),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                },
+                  ),
+                  Slider(
+                    value: audioProvider.currentVolume,
+                    min: 0.0,
+                    max: 1.0,
+                    onChanged: audioProvider.setVolume,
+                  ),
+                ],
               );
             },
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Text(
-              'Volume',
+
+          Consumer<AudioProvider>(
+            builder: (context, audioProvider, _) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.speed, size: 18),
+                        const SizedBox(width: 8),
+                        const Text('Playback Speed'),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1DB954).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${audioProvider.playbackSpeed}×',
+                            style: const TextStyle(
+                              color: Color(0xFF1DB954),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Wrap(
+                      spacing: 8,
+                      children: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((speed) {
+                        final selected =
+                            (audioProvider.playbackSpeed - speed).abs() < 0.01;
+                        return ChoiceChip(
+                          label: Text('${speed}×'),
+                          selected: selected,
+                          onSelected: (_) =>
+                              audioProvider.setPlaybackSpeed(speed),
+                          selectedColor: const Color(0xFF1DB954),
+                          labelStyle: TextStyle(
+                            color: selected ? Colors.white : null,
+                            fontWeight: selected ? FontWeight.w600 : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
+          ),
+
+          const Divider(height: 1, indent: 16, endIndent: 16),
+
+          _SectionHeader(title: 'ABOUT'),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('Version'),
+            trailing: Text(
+              '1.0.0',
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: StreamBuilder<double>(
-              stream: Stream.value(1.0),
-              builder: (context, snapshot) {
-                return Slider(
-                  value: snapshot.data ?? 1.0,
-                  min: 0.0,
-                  max: 1.0,
-                  onChanged: (value) {
-                    audioProvider.setVolume(value);
-                  },
-                );
-              },
+          ListTile(
+            leading: const Icon(Icons.music_note_outlined),
+            title: const Text('Audio Engine'),
+            trailing: Text(
+              'just_audio',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                fontFamily: 'monospace',
+              ),
             ),
           ),
+
+          const SizedBox(height: 40),
         ],
+      ),
+    );
+  }
+
+  void _showColorPicker(BuildContext context, ThemeProvider themeProvider) {
+    final colours = [
+      const Color(0xFF1DB954),
+      Colors.blue,
+      Colors.purple,
+      Colors.red,
+      Colors.orange,
+      Colors.cyan,
+      Colors.pink,
+      const Color(0xFFE8C951),
+    ];
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Choose Accent Colour'),
+        content: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: colours.map((color) {
+            final selected = themeProvider.primaryColor == color;
+            return GestureDetector(
+              onTap: () {
+                themeProvider.setPrimaryColor(color);
+                Navigator.pop(context);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: selected ? Colors.white : Colors.transparent,
+                    width: 3,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color: color.withOpacity(0.5),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: selected
+                    ? const Icon(Icons.check, color: Colors.white, size: 20)
+                    : null,
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }

@@ -6,16 +6,19 @@ import 'providers/audio_provider.dart';
 import 'providers/playlist_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/search_screen.dart';
 import 'screens/playlist_screen.dart';
 import 'screens/settings_screen.dart';
 import 'widgets/mini_player.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     final storageService = StorageService();
@@ -30,12 +33,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PlaylistProvider(storageService)),
       ],
       child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
+        builder: (context, themeProvider, _) {
           return MaterialApp(
-            title: 'Offline Music Player',
+            title: 'Music Player',
             debugShowCheckedModeBanner: false,
             theme: themeProvider.currentTheme,
-            home: MainScreen(),
+            home: const MainScreen(),
           );
         },
       ),
@@ -44,6 +47,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MainScreen extends StatefulWidget {
+  const MainScreen({Key? key}) : super(key: key);
+
   @override
   _MainScreenState createState() => _MainScreenState();
 }
@@ -51,8 +56,9 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
+  static final List<Widget> _screens = [
     HomeScreen(),
+    SearchScreen(),
     PlaylistScreen(),
     SettingsScreen(),
   ];
@@ -62,37 +68,56 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          _screens[_currentIndex],
+          IndexedStack(index: _currentIndex, children: _screens),
           Consumer<AudioProvider>(
-            builder: (context, provider, child) {
-              if (provider.currentSong == null) {
-                return SizedBox.shrink();
-              }
+            builder: (context, provider, _) {
+              if (provider.currentSong == null) return const SizedBox.shrink();
               return Positioned(
                 left: 0,
                 right: 0,
-                bottom: 60,
+                bottom: 64,
                 child: MiniPlayer(),
               );
             },
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Colors.white.withOpacity(0.08), width: 0.5),
+        ),
+      ),
+      child: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        onTap: (i) => setState(() => _currentIndex = i),
+        type: BottomNavigationBarType.fixed,
+        selectedFontSize: 11,
+        unselectedFontSize: 11,
+        items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.playlist_play),
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            activeIcon: Icon(Icons.search),
+            label: 'Search',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.queue_music_outlined),
+            activeIcon: Icon(Icons.queue_music),
             label: 'Playlists',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],

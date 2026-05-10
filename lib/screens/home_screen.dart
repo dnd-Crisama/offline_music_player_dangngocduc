@@ -6,8 +6,9 @@ import '../providers/audio_provider.dart';
 import '../services/playlist_service.dart';
 import '../services/permission_service.dart';
 import '../widgets/song_tile.dart';
+import '../screens/now_playing_screen.dart';
 
-enum SortOption { TITLE, ARTIST, ALBUM }
+enum SortOption { title, artist, album }
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -18,11 +19,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final PlaylistService _playlistService = PlaylistService();
   final PermissionService _permissionService = PermissionService();
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   List<SongModel> _songs = [];
   List<SongModel> _filteredSongs = [];
   bool _isLoading = true;
   bool _hasPermission = false;
+  SortOption _currentSort = SortOption.title;
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -30,96 +34,475 @@ class _HomeScreenState extends State<HomeScreen> {
     _initializeApp();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Future<void> _initializeApp() async {
     _hasPermission = await _permissionService.requestStoragePermission();
-
     if (_hasPermission) {
       await _permissionService.requestAudioPermission();
       await _loadSongs();
     }
-
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _loadSongs() async {
     try {
       final songs = await _playlistService.getAllSongs();
-      setState(() {
-        _songs = songs;
-        _filteredSongs = songs;
-      });
-      _filterSongs(_searchController.text);
+      if (mounted) {
+        setState(() {
+          _songs = songs;
+          _filteredSongs = songs;
+        });
+        _applySort();
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error loading songs: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading songs: $e')));
+      }
     }
   }
 
   void _filterSongs(String query) {
     setState(() {
       _filteredSongs = _songs.where((song) {
-        final lowerQuery = query.toLowerCase();
-        return song.title.toLowerCase().contains(lowerQuery) ||
-            song.artist.toLowerCase().contains(lowerQuery);
+        final q = query.toLowerCase();
+        return song.title.toLowerCase().contains(q) ||
+            song.artist.toLowerCase().contains(q) ||
+            (song.album?.toLowerCase().contains(q) ?? false);
       }).toList();
+      _applySort(notify: false);
     });
   }
 
-  void _sortSongs(SortOption sortType) {
-    setState(() {
-      if (sortType == SortOption.TITLE) {
-        _filteredSongs.sort(
-          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-        );
-      } else if (sortType == SortOption.ARTIST) {
-        _filteredSongs.sort(
-          (a, b) => a.artist.toLowerCase().compareTo(b.artist.toLowerCase()),
-        );
-      } else if (sortType == SortOption.ALBUM) {
-        _filteredSongs.sort(
-          (a, b) => (a.album ?? '').toLowerCase().compareTo(
+  void _applySort({bool notify = true}) {
+    _filteredSongs.sort((a, b) {
+      switch (_currentSort) {
+        case SortOption.title:
+          return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+        case SortOption.artist:
+          return a.artist.toLowerCase().compareTo(b.artist.toLowerCase());
+        case SortOption.album:
+          return (a.album ?? '').toLowerCase().compareTo(
             (b.album ?? '').toLowerCase(),
-          ),
-        );
+          );
       }
     });
+    if (notify && mounted) setState(() {});
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : !_hasPermission
+            ? _buildPermissionDenied()
+            : _buildContent(),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        SliverToBoxAdapter(child: _buildHeader()),
+
+        Consumer<AudioProvider>(
+          builder: (_, provider, __) {
+            final recent = provider.recentlyPlayed;
+            if (recent.isEmpty)
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            return SliverToBoxAdapter(
+              child: _buildHorizontalSection(
+                title: 'Recently Played',
+                songs: recent,
+                provider: provider,
+              ),
+            );
+          },
+        ),
+
+        Consumer<AudioProvider>(
+          builder: (_, provider, __) {
+            final favs = provider.getFavoriteSongs(_songs);
+            if (favs.isEmpty)
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            return SliverToBoxAdapter(
+              child: _buildHorizontalSection(
+                title: 'Favourites',
+                songs: favs,
+                provider: provider,
+              ),
+            );
+          },
+        ),
+
+        SliverToBoxAdapter(child: _buildSearchBar()),
+
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _filteredSongs.isEmpty
+                      ? 'No results'
+                      : '${_filteredSongs.length} songs',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 13,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Consumer<AudioProvider>(
+                      builder: (_, provider, __) => GestureDetector(
+                        onTap: () {
+                          if (_filteredSongs.isEmpty) return;
+                          final idx =
+                              DateTime.now().millisecondsSinceEpoch %
+                              _filteredSongs.length;
+                          provider.setPlaylist(_filteredSongs, idx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => NowPlayingScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1DB954),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.shuffle,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Shuffle',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    PopupMenuButton<SortOption>(
+                      icon: const Icon(
+                        Icons.sort,
+                        color: Colors.white54,
+                        size: 20,
+                      ),
+                      color: const Color(0xFF282828),
+                      onSelected: (opt) {
+                        setState(() => _currentSort = opt);
+                        _applySort();
+                      },
+                      itemBuilder: (_) => [
+                        _sortItem(SortOption.title, 'Title'),
+                        _sortItem(SortOption.artist, 'Artist'),
+                        _sortItem(SortOption.album, 'Album'),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        _songs.isEmpty
+            ? SliverToBoxAdapter(child: _buildNoSongs())
+            : SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final song = _filteredSongs[index];
+                  return Consumer<AudioProvider>(
+                    builder: (_, provider, __) => SongTile(
+                      song: song,
+                      onTap: () => provider.setPlaylist(_filteredSongs, index),
+                    ),
+                  );
+                }, childCount: _filteredSongs.length),
+              ),
+
+        const SliverToBoxAdapter(child: SizedBox(height: 160)),
+      ],
+    );
+  }
+
+  PopupMenuItem<SortOption> _sortItem(SortOption opt, String label) {
+    return PopupMenuItem<SortOption>(
+      value: opt,
+      child: Row(
+        children: [
+          Icon(
+            _currentSort == opt
+                ? Icons.radio_button_checked
+                : Icons.radio_button_off,
+            color: const Color(0xFF1DB954),
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Text(label, style: const TextStyle(color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _getGreeting(),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.65),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'My Music',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: Icon(
+              _showSearch ? Icons.search_off : Icons.search,
+              color: Colors.white,
+            ),
+            onPressed: () => setState(() {
+              _showSearch = !_showSearch;
+              if (!_showSearch) {
+                _searchController.clear();
+                _filterSongs('');
+              }
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      child: _showSearch
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: TextField(
                 controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: 'Search songs...',
-                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Search songs, artists, albums...',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: Colors.white38,
+                    size: 20,
+                  ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.clear,
+                            color: Colors.white38,
+                            size: 18,
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            _filterSongs('');
+                          },
+                        )
+                      : null,
                   filled: true,
+                  fillColor: Colors.white.withOpacity(0.08),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
                   ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onChanged: _filterSongs,
               ),
+            )
+          : const SizedBox(height: 4),
+    );
+  }
+
+  Widget _buildHorizontalSection({
+    required String title,
+    required List<SongModel> songs,
+    required AudioProvider provider,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
             ),
-            SizedBox(height: 10),
-            Expanded(
-              child: _isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : !_hasPermission
-                  ? _buildPermissionDenied()
-                  : _songs.isEmpty
-                  ? _buildNoSongs()
-                  : _buildSongList(),
+          ),
+        ),
+        SizedBox(
+          height: 138,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: songs.length,
+            itemBuilder: (context, i) {
+              final song = songs[i];
+              return GestureDetector(
+                onTap: () {
+                  provider.setPlaylist(songs, i);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => NowPlayingScreen()),
+                  );
+                },
+                child: Container(
+                  width: 110,
+                  margin: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 110,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF282828),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: _RecentlyPlayedArt(song: song),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        song.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        song.artist,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPermissionDenied() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.music_off, size: 72, color: Colors.white24),
+            const SizedBox(height: 20),
+            const Text(
+              'Storage Access Required',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Please grant storage permission to access your music library.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54, fontSize: 14),
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              onPressed: openAppSettings,
+              icon: const Icon(Icons.settings_outlined),
+              label: const Text('Open Settings'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1DB954),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 14,
+                ),
+              ),
             ),
           ],
         ),
@@ -127,98 +510,66 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAppBar() {
-    return Padding(
-      padding: EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'My Music',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          PopupMenuButton<SortOption>(
-            onSelected: _sortSongs,
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: SortOption.TITLE,
-                child: Text('Sort by Title'),
-              ),
-              PopupMenuItem(
-                value: SortOption.ARTIST,
-                child: Text('Sort by Artist'),
-              ),
-              PopupMenuItem(
-                value: SortOption.ALBUM,
-                child: Text('Sort by Album'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSongList() {
-    return RefreshIndicator(
-      onRefresh: _loadSongs,
-      child: ListView.builder(
-        physics: AlwaysScrollableScrollPhysics(),
-        itemCount: _filteredSongs.length,
-        itemBuilder: (context, index) {
-          final song = _filteredSongs[index];
-          return SongTile(
-            song: song,
-            onTap: () {
-              context.read<AudioProvider>().setPlaylist(_filteredSongs, index);
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPermissionDenied() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.music_off, size: 80, color: Colors.grey),
-          SizedBox(height: 20),
-          Text(
-            'Storage Permission Required',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          SizedBox(height: 10),
-          Text(
-            'Please grant storage permission to access music',
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () async {
-              await openAppSettings();
-            },
-            child: Text('Open Settings'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildNoSongs() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.music_note, size: 80, color: Colors.grey),
-          SizedBox(height: 20),
-          Text('No Music Found', style: Theme.of(context).textTheme.titleLarge),
-          SizedBox(height: 10),
-          Text('Add some music files to your device'),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            const SizedBox(height: 48),
+            const Icon(Icons.music_note, size: 72, color: Colors.white24),
+            const SizedBox(height: 20),
+            const Text(
+              'No Music Found',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Add MP3 files to your device or place them in\nassets/audio/sample_songs/',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54, fontSize: 14),
+            ),
+            const SizedBox(height: 28),
+            OutlinedButton.icon(
+              onPressed: _loadSongs,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF1DB954),
+                side: const BorderSide(color: Color(0xFF1DB954)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecentlyPlayedArt extends StatelessWidget {
+  final SongModel song;
+
+  const _RecentlyPlayedArt({required this.song});
+
+  @override
+  Widget build(BuildContext context) {
+    if (song.albumArt == null) {
+      return const Center(
+        child: Icon(Icons.music_note, color: Colors.white24, size: 36),
+      );
+    }
+    return Image.asset(
+      'assets/images/default_album_art.png',
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const Center(
+        child: Icon(Icons.music_note, color: Colors.white24, size: 36),
       ),
     );
   }
