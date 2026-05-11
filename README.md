@@ -11,9 +11,17 @@ Offline Music Player được xây dựng cho phát nhạc cục bộ với giao
 - Mini player hiển thị khi điều hướng qua các màn hình khác
 - Tạo playlist và duyệt các playlist
 - Tìm kiếm bài hát theo tên, nghệ sĩ và album
-- Màn hình cài đặt cho tùy chọn ứng dụng và quyền truy cập
-- Hộp thoại yêu cầu quyền truy cập âm thanh trên Android
-- Tự động sử dụng file âm thanh mẫu khi không tìm thấy bài hát 
+- Màn hình cài đặt cho tùy chọn ứng dụng
+- Playyback có sleeptimer và playback speed
+- Nhạc chạy dưới nền
+- Thêm bài hát yêu thích
+- Shuffle bài hát và Loop
+- Tinh chỉnh âm lượng
+- Tự động sử dụng file âm thanh mẫu khi không tìm thấy bài hát
+- Light mode - Dark mode
+
+## Video demo
+https://github.com/user-attachments/assets/7e0b2254-db77-464f-8ab2-436c9e684c12
 
 ## Hướng dẫn cài đặt
 
@@ -22,7 +30,7 @@ Offline Music Player được xây dựng cho phát nhạc cục bộ với giao
    - Android SDK có sẵn trình giả lập hoặc thiết bị Android thật
 2. Sao chép kho lưu trữ:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/dnd-Crisama/offline_music_player_dangngocduc.git
    cd offline_music_player
    ```
 3. Cài đặt phụ thuộc:
@@ -36,32 +44,50 @@ Offline Music Player được xây dựng cho phát nhạc cục bộ với giao
 
 ## Ảnh chụp màn hình của các giao diện
 
-Thêm ảnh chụp màn hình vào thư mục `screenshots/` và cập nhật đường dẫn hình ảnh bên dưới nếu cần.
-
 - Màn hình chính với danh sách bài hát
-<img width="490" height="900" alt="image" src="https://github.com/user-attachments/assets/03585669-68fe-4661-bd80-6619f340c8a8" />
+<img width="471" height="883" alt="image" src="https://github.com/user-attachments/assets/edd21215-dd80-4b22-85f7-4036fa03fe9d" />
+<br>
+<img width="456" height="861" alt="image" src="https://github.com/user-attachments/assets/eceff057-408c-4390-a099-52a6722d095e" />
 <br>
 - Màn hình Now Playing
-<img width="487" height="900" alt="image" src="https://github.com/user-attachments/assets/b85dea99-1166-4800-87b5-7718628b9681" />
+<img width="440" height="866" alt="image" src="https://github.com/user-attachments/assets/c3972ed6-2553-4c87-8e8d-9b04ab6ee074" />
+<br>
+- Sleep timer
+<img width="442" height="871" alt="image" src="https://github.com/user-attachments/assets/11d80e4b-bba0-4bf3-a88c-ec261b7c44b2" />
+<br>
+- Playback speed
+<img width="447" height="866" alt="image" src="https://github.com/user-attachments/assets/af97e9d0-690e-4be5-8f57-177f9a8e8aaa" />
+<br>
+<img width="440" height="863" alt="image" src="https://github.com/user-attachments/assets/cf51b5fe-7b27-4fe4-9ebb-22e584a1d035" />
 <br>
 - Mini player
-<img width="386" height="268" alt="image" src="https://github.com/user-attachments/assets/251b37c3-999c-4215-b22b-8701fa78d035" />
+<img width="378" height="120" alt="image" src="https://github.com/user-attachments/assets/50494a39-9a67-45d0-a753-aee38d852d31" />
+
 - Màn hình Playlist
-<img width="459" height="898" alt="image" src="https://github.com/user-attachments/assets/fc30ee26-0808-49bb-99b2-f919bb0ad279" />
+<img width="437" height="876" alt="image" src="https://github.com/user-attachments/assets/31e908c9-321d-4fdd-9dbf-640b9fac0d42" />
 <br>
-<img width="466" height="889" alt="image" src="https://github.com/user-attachments/assets/0d9485f9-2bb1-4035-9ccd-0152dcfc10d1" />
+<img width="440" height="882" alt="image" src="https://github.com/user-attachments/assets/3cd7c9ec-daf8-4d36-b27c-2cdfe168ba3c" />
 <br>
-<img width="498" height="892" alt="image" src="https://github.com/user-attachments/assets/a042a243-d6e7-43cc-af83-82c8f5ba2c17" />
+<img width="460" height="869" alt="image" src="https://github.com/user-attachments/assets/d9acd73a-67b4-430f-b167-8831bf02eda9" />
 <br>
 - Màn hình Tìm kiếm
-<img width="462" height="892" alt="image" src="https://github.com/user-attachments/assets/7605a0b1-2266-4547-8bbe-f0ba443df991" />
+<img width="446" height="867" alt="image" src="https://github.com/user-attachments/assets/d533e85c-cf09-44ae-89cf-23c859001161" />
+<br>
+<img width="425" height="862" alt="image" src="https://github.com/user-attachments/assets/b1bbb4eb-b725-4bc6-b7b5-74c0d4bfab95" />
 <br>
 - Màn hình Cài đặt
-<img width="454" height="890" alt="image" src="https://github.com/user-attachments/assets/29b16f67-6cf9-44ad-a66f-1fb3a8e7c8f4" />
+<img width="435" height="876" alt="image" src="https://github.com/user-attachments/assets/d4f5a946-b56e-44c3-84e8-cfba8b2c5a40" />
 <br>
 - Hộp thoại yêu cầu quyền
 <img width="413" height="862" alt="image" src="https://github.com/user-attachments/assets/8189c767-4bd1-4394-9fcf-8baa0c3afd08" />
-
+<br>
+- Light mode
+<img width="447" height="877" alt="image" src="https://github.com/user-attachments/assets/36e970a6-bb1a-4aae-a586-e64dea8447ab" />
+<br>
+<img width="442" height="869" alt="image" src="https://github.com/user-attachments/assets/0b851179-2185-4bee-b01c-75c1c51f0551" />
+<br>
+<img width="442" height="880" alt="image" src="https://github.com/user-attachments/assets/28463879-47cf-4f59-9c15-c0fbc39361a7" />
+<br>
 ## Cách thêm file nhạc để thử nghiệm
 
 1. Đặt file MP3 vào thư mục `assets/audio/sample_songs/`.
@@ -108,7 +134,6 @@ Xem `MUSIC_CREDITS.md` để biết chi tiết nguồn và hướng dẫn ghi nh
 - Thêm điều khiển phát trên màn hình khóa và thông báo.
 - Cải thiện bộ lọc tìm kiếm và khám phá nghệ sĩ/album.
 - Hỗ trợ ảnh bìa album tốt hơn và bộ nhớ đệm.
-- Thêm cải tiến dành cho iOS và hoàn thiện đa nền tảng.
 
 ## Cấu trúc kho lưu trữ
 
